@@ -1,7 +1,7 @@
 all: myfrm
 
-myfrm: myfrm.cpp
-	g++ -std=c++11 myfrm.cpp -Wall -lmhash -lssl -o myfrm
+myfrm: myfrm.cpp util.h
+	g++ -std=c++11 myfrm.cpp util.h -Wall -lmhash -lssl -o myfrm
 
 .PHONY: clean
 
