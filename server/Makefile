@@ -1,7 +1,7 @@
 all: myfrmd
 
-myfrmd: myfrmd.c
-	gcc myfrmd.c -Wall -lmhash -lssl -o myfrmd
+myfrmd: myfrmd.cpp
+	g++ -std=c++11 myfrmd.cpp -Wall -lmhash -lssl -o myfrmd
 
 .PHONY: clean
 

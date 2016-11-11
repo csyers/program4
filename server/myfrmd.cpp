@@ -4,9 +4,11 @@
  * Programming Assignment 4: Program a Prototype of a Message Board Forum application
  */
 
-#include <stdio.h>
+#include <iostream>
+
+using namespace std;
 
 int main(int argc, char* argv[]){
-    printf("hello world\n");
+    cout << "hello world" << endl;
     return 0;
 }
