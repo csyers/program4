@@ -10,9 +10,10 @@ void print_usage_and_exit();
 void print_error_and_exit(string message, int s_udp, int s_tcp);
 
 int main(int argc, char* argv[]){
-    string host, port_temp;
+    string host, port_temp, password;
     int port;
     int s_udp = -1, s_tcp = -1;
+    int bytes_sent, bytes_received;
     
     // check the number of arguemnts
     if(argc != 3){
@@ -90,8 +91,37 @@ int main(int argc, char* argv[]){
             // case: destroy board operation
         } else if(operation == "XIT"){
             // case: exit client connection operation
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation XIT", s_udp, s_tcp);
+            } else {
+                cout << "Goodbye" << endl;
+                break;
+            }
         } else if(operation == "SHT"){
             // case: shutdown receiver operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation SHT", s_udp, s_tcp);
+            } else {
+                cout << "password: ";
+                getline(cin, password);
+                bytes_sent = send_string_udp(password, s_udp, sin);
+                if (bytes_sent < 0) {
+                    print_error_and_exit("error sending password", s_udp, s_tcp);
+                } else {
+                    string resp;
+                    bytes_received = recv_string_udp(resp, s_udp, sin);
+                    if (bytes_received < 0) {
+                        print_error_and_exit("error in receiving confirmation", s_udp, s_tcp);
+                    }
+                    if (resp == "success") {
+                        cout << "Server shutdown. Goodbye" << endl;
+                        break;
+                    } else {
+                        cout << "invalid password" << endl;
+                    }
+                }
+            }
         } else {
             // case: invalid command: send error message and prompt again
             cout << "Invalid operation: " << operation << endl;

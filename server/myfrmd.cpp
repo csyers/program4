@@ -7,15 +7,17 @@
 #include "util.h"
 
 #define MAX_PENDING 5
+#define MAX_LINE 4096
 
 void print_usage_and_exit();
 void print_error_and_exit(string, int, int);
 
 int main(int argc, char* argv[]){
-    string port_temp, password;
+    string port_temp, password, operation;
     int port;
     int s_udp = -1;
     int s_tcp = -1;
+    int bytes_received, bytes_sent;
 
     // check the nubmer of agurmnets
     if(argc != 3){
@@ -46,6 +48,7 @@ int main(int argc, char* argv[]){
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = port;
+    //addr_len = sizeof(sin);
 
     // open a tcp socket, exit if there is an error
     if((s_tcp=socket(PF_INET,SOCK_STREAM,0)) < 0){
@@ -73,8 +76,7 @@ int main(int argc, char* argv[]){
     }   
 
     // begin listening for client connections on the socket
-    if((listen(s_tcp,MAX_PENDING))<0)
-    {
+    if((listen(s_tcp,MAX_PENDING))<0) {
         print_error_and_exit("error in listen", s_udp, s_tcp);
     }
 
@@ -86,9 +88,67 @@ int main(int argc, char* argv[]){
         }
         // infinite loop while in connection with client
         while(1){
-            cout << " in connection..." << endl;
             // do something
-            sleep(10);
+            //if ((len=recvfrom(s_udp, buf, sizeof(buf), 0, (struct sockaddr *) &sin, &addr_len))==-1){
+                //close(s_new);
+                //print_error_and_exit("error receiving message", s_udp, s_tcp);
+            //}
+            bytes_received = recv_string_udp(operation, s_udp, sin);
+            if (bytes_received < 0) {
+                close(s_new);
+                print_error_and_exit("error receiving operation", s_udp, s_tcp);
+            }
+
+            if (operation == "CRT") {
+            } else if (operation == "MSG") {
+            } else if (operation == "DLT") {
+            } else if (operation == "EDT") {
+            } else if (operation == "LIS") {
+            } else if (operation == "RDB") {
+            } else if (operation == "APM") {
+            } else if (operation == "DWN") {
+            } else if (operation == "DST") {
+            } else if (operation == "XIT") {
+                string test = "okay";
+                bytes_sent = send_string_udp(test, s_udp, sin);
+                close(s_new);
+                break;
+            } else if (operation == "SHT") {
+                string client_password;
+                bytes_received = recv_string_udp(client_password, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    print_error_and_exit("error receiving operation", s_udp, s_tcp);
+                }
+
+                if (password == client_password) {
+                    bytes_sent = send_string_udp("success", s_udp, sin);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    } else {
+                        //while(1) {
+                            //bytes_sent = send_string_udp("success", s_udp, sin);
+                            //sleep(1);
+                        //}
+                        // deletes files
+                        close(s_new);
+                        close(s_udp);
+                        close(s_tcp);
+                        return 0;
+                    }
+                } else {
+                    bytes_sent = send_string_udp("failure", s_udp, sin);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    }
+                }
+            } else {
+                // other
+            }
+
+            //sleep(10);
 
         }
         close(s_new);
