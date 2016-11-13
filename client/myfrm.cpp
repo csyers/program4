@@ -7,11 +7,12 @@
 #include "util.h"
 
 void print_usage_and_exit();
-void print_error_and_exit(string message);
+void print_error_and_exit(string message, int s_udp, int s_tcp);
 
 int main(int argc, char* argv[]){
     string host, port_temp;
     int port;
+    int s_udp = -1, s_tcp = -1;
     
     // check the number of arguemnts
     if(argc != 3){
@@ -28,18 +29,17 @@ int main(int argc, char* argv[]){
             port = atoi(port_temp.c_str());
         } else{
             // print error if there are non-digits in the port argument
-            print_error_and_exit("port argument must be positive integer");
+            print_error_and_exit("port argument must be positive integer", s_udp, s_tcp);
         }
     }
 
     // local variables for socket programming
     struct hostent *hp;
     struct sockaddr_in sin;
-    int s_udp, s_tcp;
 
     // get host name and if it is not resolvable, print error and exit
     if(!(hp =  gethostbyname(host.c_str()))){
-        print_error_and_exit("unknown host");
+        print_error_and_exit("unknown host", s_udp, s_tcp);
     }
 
     // setup the sockaddr_in
@@ -50,19 +50,19 @@ int main(int argc, char* argv[]){
 
     // open a UDP socket, exit if there is an error
     if((s_udp=socket(PF_INET,SOCK_DGRAM,0))<0){
-        print_error_and_exit("could not open UDP socket");
+        print_error_and_exit("could not open UDP socket", s_udp, s_tcp);
     }
 
     // open a TCP socket, exit if there is an error
     if((s_tcp=socket(PF_INET,SOCK_STREAM,0))<0){
-        print_error_and_exit("could not open TCP socket");
+        print_error_and_exit("could not open TCP socket", s_udp, s_tcp);
     }
 
     // connect tcp connection
     if(connect(s_tcp,(struct sockaddr *)&sin,sizeof(sin))<0){
         close(s_udp);
         close(s_tcp);
-        print_error_and_exit("error in tcp connect call");
+        print_error_and_exit("error in tcp connect call", s_udp, s_tcp);
     }
 
     // local variables for operations passing

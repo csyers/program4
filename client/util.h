@@ -12,7 +12,13 @@ void print_usage_and_exit(){
     exit(1);
 }
 
-void print_error_and_exit(string message){
+void print_error_and_exit(string message, int s_udp, int s_tcp){
     cerr << "myfrm: " << message << endl;
-    //exit(1);
+    if(s_udp > 0){
+        close(s_udp);
+    }
+    if(s_tcp > 0){
+        close(s_tcp);
+    }
+    exit(1);
 }
