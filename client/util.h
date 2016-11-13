@@ -3,6 +3,8 @@
 #include <string>
 #include <cstring>
 #include <netdb.h>
+#include <unistd.h>
+
 using namespace std;
 
 void print_usage_and_exit(){
@@ -12,4 +14,5 @@ void print_usage_and_exit(){
 
 void print_error_and_exit(string message){
     cerr << "myfrm: " << message << endl;
+    //exit(1);
 }

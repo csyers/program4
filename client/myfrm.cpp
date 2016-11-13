@@ -58,5 +58,48 @@ int main(int argc, char* argv[]){
         print_error_and_exit("could not open TCP socket");
     }
 
+    // connect tcp connection
+    if(connect(s_tcp,(struct sockaddr *)&sin,sizeof(sin))<0){
+        close(s_udp);
+        close(s_tcp);
+        print_error_and_exit("error in tcp connect call");
+    }
+
+    // local variables for operations passing
+    string operation;
+
+    cout << "Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): ";
+    while(getline(cin,operation)){
+        if(operation == "CRT"){
+
+        } else if(operation == "LIS"){
+            // case: list boards operation
+        } else if(operation == "MSG"){
+            // case: leave message operation
+        } else if(operation == "DLT"){
+            // delete message operation
+        } else if(operation == "RDB"){
+            // case read baord operation
+        } else if(operation == "EDT"){
+            // case: edit file operation
+        } else if(operation == "APN"){
+            // case: append file operation
+        } else if(operation == "DWN"){
+            // case: download file operation
+        } else if(operation == "DST"){
+            // case: destroy board operation
+        } else if(operation == "XIT"){
+            // case: exit client connection operation
+        } else if(operation == "SHT"){
+            // case: shutdown receiver operation
+        } else {
+            // case: invalid command: send error message and prompt again
+            cout << "Invalid operation: " << operation << endl;
+        }
+        cout << "Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): ";
+    }
+
+    close(s_tcp);
+    close(s_udp);
     return 0;
 }
