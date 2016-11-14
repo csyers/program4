@@ -72,7 +72,6 @@ int main(int argc, char* argv[]){
     if (bytes_sent < 0) {    
         print_error_and_exit("error in send", s_udp, s_tcp);
     }
-    cout << "ready sent" << endl;
     
     while(1){
         bytes_received = recv_string_udp(user_request, s_udp, sin);
@@ -139,6 +138,10 @@ int main(int argc, char* argv[]){
             // case: list boards operation
         } else if(operation == "MSG"){
             // case: leave message operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+            }
             cout << "Enter message board name: ";
             getline(cin, board_name);
             cout << "Enter message: ";

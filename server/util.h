@@ -11,6 +11,12 @@
 
 using namespace std;
 
+void close_fp(unordered_map<string, pair<FILE *, int> > boards) {
+    for (auto const it: boards) {
+        fclose(it.second.first);
+    }
+}
+
 void print_usage_and_exit(){
     cout << "usage: myfrmd port password" << endl;
     exit(1);

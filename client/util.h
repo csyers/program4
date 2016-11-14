@@ -9,7 +9,6 @@
 
 using namespace std;
 
-
 void print_usage_and_exit(){
     cout << "usage: myfrm server port" << endl;
     exit(1);
