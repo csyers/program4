@@ -14,8 +14,9 @@ void print_error_and_exit(string, int, int);
 
 int main(int argc, char* argv[]){
     string port_temp, password, operation;
+    string board_name, message;
     string username;
-    unordered_map<string,FILE*> boards;
+    unordered_map<string,pair<FILE*, int> > boards;
     unordered_map<string,string> users;
     int port;
     int s_udp = -1;
@@ -92,6 +93,7 @@ int main(int argc, char* argv[]){
 
         string flag;
         bytes_received = recv_string_udp(flag, s_udp, sin);
+        cout << "flag received" <<endl;
         if (bytes_received < 0) {
             close(s_new);
             print_error_and_exit("error receiving operation", s_udp, s_tcp);
@@ -170,7 +172,6 @@ int main(int argc, char* argv[]){
             }
 
             if (operation == "CRT") {
-                string board_name;
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -183,7 +184,7 @@ int main(int argc, char* argv[]){
                         close(s_new);
                         print_error_and_exit("error in opening file",s_udp,s_tcp);
                     } else {
-                        boards[board_name] = fp;
+                        boards[board_name] = make_pair(fp, 0);
                         fwrite(username.c_str(),sizeof(username.c_str()),MAX_LENGTH,fp);
                         fprintf(fp,username.c_str());
                         bytes_sent = send_string_udp("successfully created board", s_udp, sin);
@@ -211,6 +212,36 @@ int main(int argc, char* argv[]){
                     }
                 }
             } else if (operation == "MSG") {
+                bytes_received = recv_string_udp(board_name, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    print_error_and_exit("error receiving operation", s_udp, s_tcp);
+                }
+
+                bytes_received = recv_string_udp(message, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    print_error_and_exit("error receiving operation", s_udp, s_tcp);
+                }
+
+                if (boards.find(board_name) != boards.end()) {
+                    fprintf(boards[board_name].first, "%d %s: %s", boards[board_name].second++, username.c_str(), message.c_str());
+                    string message = "Message appended to board " + board_name;
+                    bytes_sent = send_string_udp(message, s_udp, sin);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    }
+                } else {
+                    string message = "Message board " + board_name + " does not exist";
+                    bytes_sent = send_string_udp(message, s_udp, sin);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    }
+                    
+                }
+
             } else if (operation == "DLT") {
             } else if (operation == "EDT") {
             } else if (operation == "LIS") {

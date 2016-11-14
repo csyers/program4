@@ -5,6 +5,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <cstdio>
 
 #define MAX_LENGTH 4096
 

@@ -70,32 +70,33 @@ int main(int argc, char* argv[]){
 
     bytes_sent = send_string_udp("ready", s_udp, sin);
     if (bytes_sent < 0) {    
-        print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+        print_error_and_exit("error in send", s_udp, s_tcp);
     }
+    cout << "ready sent" << endl;
     
     while(1){
         bytes_received = recv_string_udp(user_request, s_udp, sin);
         if (bytes_received < 0) {
-        print_error_and_exit("error in receiving confirmation", s_udp, s_tcp);
+        print_error_and_exit("error in receiving request ", s_udp, s_tcp);
         }
         cout << user_request;
         getline(cin,user);
 
         bytes_sent = send_string_udp(user, s_udp, sin);
         if (bytes_sent < 0) {    
-            print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+            print_error_and_exit("error sending username", s_udp, s_tcp);
         }
     
         bytes_received = recv_string_udp(password_message, s_udp, sin);
         if (bytes_received < 0) {
-           print_error_and_exit("error in receiving confirmation", s_udp, s_tcp);
+           print_error_and_exit("error in receiving password request", s_udp, s_tcp);
         }
         cout << password_message;
         getline(cin,password);
     
         bytes_sent = send_string_udp(password, s_udp, sin);
         if (bytes_sent < 0) {    
-            print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+            print_error_and_exit("error sending password", s_udp, s_tcp);
         }
     
         bytes_received = recv_string_udp(ack, s_udp, sin);
@@ -108,14 +109,12 @@ int main(int argc, char* argv[]){
             cout << "wrong password" << endl;
         }
     }
-    
-
     // local variables for operations passing
     string operation;
+    string board_name, message;
 
     cout << "Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): ";
     while(getline(cin,operation)){
-        string board_name;
         if(operation == "CRT"){
             // case: create board
             bytes_sent = send_string_udp(operation, s_udp, sin);
@@ -140,6 +139,25 @@ int main(int argc, char* argv[]){
             // case: list boards operation
         } else if(operation == "MSG"){
             // case: leave message operation
+            cout << "Enter message board name: ";
+            getline(cin, board_name);
+            cout << "Enter message: ";
+            getline(cin, message);
+
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board_name", s_udp, s_tcp);
+            }
+            bytes_sent = send_string_udp(message, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending msg", s_udp, s_tcp);
+            }
+            string resp;
+            bytes_received = recv_string_udp(resp, s_udp, sin);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving response", s_udp, s_tcp);
+            }
+            cout << resp << endl;
         } else if(operation == "DLT"){
             // delete message operation
         } else if(operation == "RDB"){
