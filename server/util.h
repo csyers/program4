@@ -6,14 +6,25 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <cstdio>
+#include <fstream>
+#include <map>
 
 #define MAX_LENGTH 4096
 
 using namespace std;
 
-void close_fp(unordered_map<string, pair<FILE *, int> > boards) {
-    for (auto const it: boards) {
-        fclose(it.second.first);
+typedef struct {
+
+    ofstream os;
+    string creator;
+    int line;
+
+} bi;
+
+void close_fp(unordered_map<string, bi> board_info){
+    unordered_map<string,bi>::iterator it;
+    for (it = board_info.begin(); it != board_info.end(); it++) {
+        it->second.os.close();
     }
 }
 

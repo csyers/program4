@@ -110,7 +110,7 @@ int main(int argc, char* argv[]){
     }
     // local variables for operations passing
     string operation;
-    string board_name, message;
+    string board_name, message, message_number, resp;
 
     cout << "Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): ";
     while(getline(cin,operation)){
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
             if (bytes_sent < 0) {
                 print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
             }
-            cout << "Enter message board name: ";
+            cout << "Enter board name to post on: ";
             getline(cin, board_name);
             cout << "Enter message: ";
             getline(cin, message);
@@ -155,7 +155,6 @@ int main(int argc, char* argv[]){
             if (bytes_sent < 0) {
                 print_error_and_exit("error sending msg", s_udp, s_tcp);
             }
-            string resp;
             bytes_received = recv_string_udp(resp, s_udp, sin);
             if (bytes_received < 0) {
                 print_error_and_exit("error in receiving response", s_udp, s_tcp);
@@ -163,6 +162,27 @@ int main(int argc, char* argv[]){
             cout << resp << endl;
         } else if(operation == "DLT"){
             // delete message operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+            }
+            cout << "Enter board name to delete from: ";
+            getline(cin, board_name);
+            cout << "Enter message number to be deleted: ";
+            getline(cin, message_number);
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board_name", s_udp, s_tcp);
+            }
+            bytes_sent = send_string_udp(message_number, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending msg", s_udp, s_tcp);
+            }
+            bytes_received = recv_string_udp(resp, s_udp, sin);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving response", s_udp, s_tcp);
+            }
+            cout << resp << endl;
         } else if(operation == "RDB"){
             // case read baord operation
         } else if(operation == "EDT"){
