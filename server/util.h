@@ -28,7 +28,7 @@ struct bi {
 
 void close_fp(unordered_map<string, bi> board_info){
     for (auto &it: board_info) {
-        *it.second.os.close();
+        it.second.os->close();
         delete it.second.os;
         it.second.os = 0;
     }
