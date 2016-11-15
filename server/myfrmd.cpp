@@ -17,8 +17,7 @@ int main(int argc, char* argv[]){
     string board_name, message, message_number;
     string username;
     unordered_map<string, bi> board_info;
-    unordered_map<string, map<int,pair<string,string>>> board_content;
-//    unordered_map<string,pair<FILE*, int> > boards;
+    unordered_map<string, map<int,pair<string,string> > > board_contents;
     unordered_map<string,string> users;
     int port;
     int s_udp = -1;
@@ -55,7 +54,6 @@ int main(int argc, char* argv[]){
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
     sin.sin_port = port;
-    //addr_len = sizeof(sin);
 
     // open a tcp socket, exit if there is an error
     if((s_tcp=socket(PF_INET,SOCK_STREAM,0)) < 0){
@@ -193,22 +191,23 @@ int main(int argc, char* argv[]){
                     close_fp(board_info);
                     print_error_and_exit("error receiving operation", s_udp, s_tcp);
                 }
-                ofstream os;;
                 if(access(board_name.c_str(), F_OK) == -1){
                     // file doesn't exist
-                    if(!(os.open(board_name))) {
+                    bi bi1;
+                    bi1.os = new ofstream(board_name);
+                    
+                    if(!bi1.os || !*bi1.os) {
                         close(s_new);
-                        close_fp(board_info);
+                            close_fp(board_info);
                         print_error_and_exit("error in opening file",s_udp,s_tcp);
                     } else {
-                        bi bi1;
                         bi1.creator = username;
-                        bi1.os = os;
                         bi1.line = 0;
-                        map<int,pair<string,string>> line_map;
-                        board_info[board_name] = bi1;
+                        map<int,pair<string,string> > line_map;
+                        board_info.insert(pair<string, bi>(board_name, bi1));
                         board_contents[board_name] = line_map;
-                        os << username;
+                        *bi1.os << username << endl;
+                        bi1.os->flush();
                         bytes_sent = send_string_udp("successfully created board", s_udp, sin);
                         if (bytes_sent < 0) {
                             close(s_new);
@@ -217,7 +216,7 @@ int main(int argc, char* argv[]){
                         }
                     }
                 } else {
-                    if(board_info.find(boaord_name) == board_info.end()){
+                    if(board_info.find(board_name) == board_info.end()){
                         // file is not in control
                         bytes_sent = send_string_udp("error: file exists but is not an active board", s_udp, sin);
                         if (bytes_sent < 0) {
@@ -251,8 +250,16 @@ int main(int argc, char* argv[]){
                 }
 
                 if(board_info.find(board_name) != board_info.end()){
-                    board_info[board_name].os << board_info[board_name].line << " " << username << ": " << message << endl;   
+                    // board exists and in control
+                    // write to the board
+                    *board_info[board_name].os << board_info[board_name].line << " " << username << ": " << message << endl;
+                    board_info[board_name].os->flush();
+
+                    // keep track of newly added line
+                    int line_num = board_info[board_name].line;
+                    board_contents[board_name][line_num] = make_pair(username, message);
                     board_info[board_name].line++;
+
                     message = "Message appended to board " + board_name;
                     bytes_sent = send_string_udp(message, s_udp, sin);
                     if (bytes_sent < 0) {
@@ -288,7 +295,9 @@ int main(int argc, char* argv[]){
                 if (board_info.find(board_name) != board_info.end()) {
                     // board in control of this server
                     // check to see if message_number is in this board
-                    if(board_contents[board_name].find(atoi(message_number.c_str())) != board_contents.end()){
+                    map<int,pair<string,string> > temp_map = board_contents[board_name];
+                    int line_num = atoi(message_number.c_str());
+                    if(temp_map.find(line_num) != temp_map.end()){
                         // if it is, check to see if current user posted that message
                         if(board_contents[board_name][atoi(message_number.c_str())].first == username){
                             // if it is, delte it and recreate file
@@ -320,7 +329,6 @@ int main(int argc, char* argv[]){
                         close(s_new);
                         close_fp(board_info);
                             print_error_and_exit("error sending confirmation", s_udp, s_tcp);
-                        }
                     }
                 }
             } else if (operation == "EDT") {
@@ -349,8 +357,9 @@ int main(int argc, char* argv[]){
                         print_error_and_exit("error sending confirmation", s_udp, s_tcp);
                     } else {
                         // deletes files
-                        for(auto const it: board_info){
-                            remove(it.first.c_str());
+                        unordered_map<string, bi>::iterator it;
+                        for (it=board_info.begin(); it!=board_info.end(); it++) {
+                            remove(it->first.c_str());
                         }
                         close(s_new);
                         close(s_udp);

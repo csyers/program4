@@ -13,18 +13,24 @@
 
 using namespace std;
 
-typedef struct {
-
-    ofstream os;
+struct bi {
     string creator;
     int line;
+    ofstream * os;
 
-} bi;
+    bi() {
+        creator = "";
+        line = 0;
+        os = 0;
+    }
+
+};
 
 void close_fp(unordered_map<string, bi> board_info){
-    unordered_map<string,bi>::iterator it;
-    for (it = board_info.begin(); it != board_info.end(); it++) {
-        it->second.os.close();
+    for (auto &it: board_info) {
+        *it.second.os.close();
+        delete it.second.os;
+        it.second.os = 0;
     }
 }
 
