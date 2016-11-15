@@ -14,6 +14,7 @@ int main(int argc, char* argv[]){
     int port;
     int s_udp = -1, s_tcp = -1;
     int bytes_sent, bytes_received;
+    int filesize;
     
     // check the number of arguemnts
     if(argc != 3){
@@ -201,7 +202,39 @@ int main(int argc, char* argv[]){
             }
             cout << resp << endl;
         } else if(operation == "RDB"){
+            string message;
             // case read baord operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation RDB", s_udp, s_tcp);
+            }
+
+            // prompt for board name
+            cout << "Enter board name to read: ";
+            getline(cin, board_name);
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board name", s_udp, s_tcp);
+            }
+
+            // recv filesize
+            bytes_received = recv_int_tcp(filesize, s_tcp);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving response", s_udp, s_tcp);
+            }
+
+            if (filesize < 0) {
+                cout << "Board " << board_name << " does not exist" << endl;
+            } else {
+                while (filesize > 0) {
+                    bytes_received = recv_file_tcp(message, s_tcp);
+                    cout << message;
+                    //message = "";
+                    filesize -= bytes_received;
+                }
+                cout << endl;
+            }
+
         } else if(operation == "EDT"){
             // case: edit file operation
             bytes_sent = send_string_udp(operation, s_udp, sin);

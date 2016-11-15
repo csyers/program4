@@ -59,3 +59,66 @@ int recv_string_udp(string &resp, int s_udp, struct sockaddr_in &sin) {
     }
 }
 
+int recv_string_tcp(string &resp, int s_new) {
+    char buf[MAX_LENGTH];
+    bzero(buf, sizeof(buf));
+    int bytes_received;
+
+    if ((bytes_received=recv(s_new, buf, sizeof(buf),0))==-1) {
+        return -1;
+    } else {
+        string temp(buf);
+        resp = temp;
+        return bytes_received;
+    }
+}
+
+int send_string_tcp(string message, int s_new) {
+    char buf[MAX_LENGTH];
+    bzero(buf, sizeof(buf));
+    strcpy(buf, message.c_str());
+    int msg_len = strlen(buf) ;
+    int bytes_sent;
+
+    if((bytes_sent=send(s_new, &buf, msg_len, 0)) < 0) {
+        return -1;
+    } else {
+        return bytes_sent;
+    }
+}
+
+int send_int_tcp(int msg, int s_new) {
+    int bytes_sent;
+
+    msg = htonl(msg);
+    if ((bytes_sent=send(s_new, &msg, sizeof(msg), 0))==-1) {
+        return -1;
+    } else {
+        return bytes_sent;
+    }
+}
+
+int recv_int_tcp(int &msg, int s_new) {
+    int bytes_recv;
+
+    if ((bytes_recv=recv(s_new, &msg, sizeof(int), 0))==-1) {
+        return -1;
+    } else {
+        msg = ntohl(msg);
+        return bytes_recv;
+    }
+}
+
+int recv_file_tcp(string &resp, int s_tcp) {
+    int bytes_recv;
+    char buf[MAX_LENGTH];
+    bzero(buf, sizeof(buf));
+
+    if ((bytes_recv=recv(s_tcp, buf, sizeof(buf), 0))==-1) {
+        return -1;
+    } 
+
+    string temp(buf);
+    resp = temp;
+    return bytes_recv;
+}

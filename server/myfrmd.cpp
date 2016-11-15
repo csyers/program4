@@ -9,10 +9,10 @@
 #define MAX_PENDING 5
 #define MAX_LINE 4096
 
-void print_usage_and_exit();
-void print_error_and_exit(string, int, int);
-int recreate_file(unordered_map<string, bi>, unordered_map<string, map<int,pair<string,string> > >, string);
-int main(int argc, char* argv[]){
+    void print_usage_and_exit();
+    void print_error_and_exit(string, int, int);
+    int recreate_file(unordered_map<string, bi>, unordered_map<string, map<int,pair<string,string> > >, string);
+    int main(int argc, char* argv[]){
     string port_temp, password, operation;
     string board_name, message, message_number, new_message;
     string username;
@@ -23,6 +23,8 @@ int main(int argc, char* argv[]){
     int s_udp = -1;
     int s_tcp = -1;
     int bytes_received, bytes_sent;
+    //struct stat st;
+    int filesize;
 
     // check the nubmer of agurmnets
     if(argc != 3){
@@ -98,6 +100,7 @@ int main(int argc, char* argv[]){
             print_error_and_exit("error in accept", s_udp, s_tcp);
         }
 
+        // send prelim message
         string flag;
         bytes_received = recv_string_udp(flag, s_udp, sin);
         if (bytes_received < 0) {
@@ -108,12 +111,14 @@ int main(int argc, char* argv[]){
 
         // infinite loop for user login
         while(1){
+            // request username
             bytes_sent = send_string_udp("please enter username: ", s_udp, sin);
             if (bytes_sent < 0) {
                 close(s_new);
                 close_fp(board_info);
                 print_error_and_exit("error sending confirmation", s_udp, s_tcp);
             }
+            // receive username
             bytes_received = recv_string_udp(username, s_udp, sin);
             if (bytes_received < 0) {
                 close(s_new);
@@ -122,6 +127,7 @@ int main(int argc, char* argv[]){
             }
             string user_password;
             if(users.find(username) == users.end()){
+                // new password for new user
                 bytes_sent = send_string_udp("please enter new password for new user: ", s_udp, sin);
                 if (bytes_sent < 0) {
                     close(s_new);
@@ -143,6 +149,7 @@ int main(int argc, char* argv[]){
                 }
                 break;
             } else {
+                // get password for existing user
                 bytes_sent = send_string_udp("please enter password for existing user: ", s_udp, sin);
                 if (bytes_sent < 0) {
                     close(s_new);
@@ -157,6 +164,7 @@ int main(int argc, char* argv[]){
                     print_error_and_exit("error receiving operation", s_udp, s_tcp);
                 }
                 if(users[username] == user_password){
+                    // successful password
                     bytes_sent = send_string_udp("success", s_udp, sin);
                     if (bytes_sent < 0) {
                         close(s_new);
@@ -165,6 +173,7 @@ int main(int argc, char* argv[]){
                     }
                     break;
                 } else {
+                    // unsuccesful password
                     bytes_sent = send_string_udp("failure", s_udp, sin);
                     if (bytes_sent < 0) {
                         close(s_new);
@@ -194,7 +203,7 @@ int main(int argc, char* argv[]){
                 if(access(board_name.c_str(), F_OK) == -1){
                     // file doesn't exist
                     bi bi1;
-                    bi1.os = new ofstream(board_name);
+                    bi1.os = new fstream(board_name, ios::in|ios::out|ios::app);
                     
                     if(!bi1.os || !*bi1.os) {
                         close(s_new);
@@ -431,6 +440,44 @@ int main(int argc, char* argv[]){
                     print_error_and_exit("error sending listing", s_udp, s_tcp);
                 }
             } else if (operation == "RDB") {
+                // receive board to read
+                bytes_received = recv_string_udp(board_name, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving board name", s_udp, s_tcp);
+                }
+
+                if (board_info.find(board_name)!=board_info.end()) {
+                    // board exist 
+                    bi temp = board_info[board_name];
+                    temp.os->seekp(0, temp.os->end);
+                    filesize = temp.os->tellp();
+                    cout << filesize << endl;
+                    bytes_sent = send_int_tcp(filesize, s_new);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        close_fp(board_info);
+                        print_error_and_exit("error sending -1", s_udp, s_tcp);
+                    } 
+
+                    // send file
+                    bytes_sent = send_file_tcp(board_info[board_name].os, s_new);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        close_fp(board_info);
+                        print_error_and_exit("error sending -1", s_udp, s_tcp);
+                    }
+                    cout << bytes_sent << endl;
+                } else {
+                    // board dne
+                    bytes_sent = send_int_tcp(-1, s_new);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        close_fp(board_info);
+                        print_error_and_exit("error sending -1", s_udp, s_tcp);
+                    } 
+                }
             } else if (operation == "APM") {
             } else if (operation == "DWN") {
             } else if (operation == "DST") {
