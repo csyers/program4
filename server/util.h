@@ -26,6 +26,31 @@ struct bi {
 
 };
 
+int recreate_file(unordered_map<string, bi> board_info, unordered_map<string, map<int,pair<string,string>>> board_contents, string board_name){
+    // close and delete
+    board_info[board_name].os->close();
+    delete board_info[board_name].os;
+    board_info[board_name].os = 0;
+
+    // remove old file
+    remove(board_name.c_str());
+
+    // mkae new os
+    board_info[board_name].os = new ofstream(board_name);
+
+    if(!board_info[board_name].os || !*board_info[board_name].os) {
+        return 0;
+    }
+
+    *board_info[board_name].os << board_info[board_name].creator << endl;
+
+    for (auto const it: board_contents[board_name]){
+        *board_info[board_name].os << it.first << " " << it.second.first << ": " << it.second.second << endl;
+    }
+
+    return 1;
+}
+
 void close_fp(unordered_map<string, bi> board_info){
     for (auto &it: board_info) {
         it.second.os->close();

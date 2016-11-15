@@ -11,7 +11,7 @@
 
 void print_usage_and_exit();
 void print_error_and_exit(string, int, int);
-
+int recreate_file(unordered_map<string, bi>, unordered_map<string, map<int,pair<string,string> > >, string);
 int main(int argc, char* argv[]){
     string port_temp, password, operation;
     string board_name, message, message_number;
@@ -198,7 +198,7 @@ int main(int argc, char* argv[]){
                     
                     if(!bi1.os || !*bi1.os) {
                         close(s_new);
-                            close_fp(board_info);
+                        close_fp(board_info);
                         print_error_and_exit("error in opening file",s_udp,s_tcp);
                     } else {
                         bi1.creator = username;
@@ -207,7 +207,6 @@ int main(int argc, char* argv[]){
                         board_info.insert(pair<string, bi>(board_name, bi1));
                         board_contents[board_name] = line_map;
                         *bi1.os << username << endl;
-                        bi1.os->flush();
                         bytes_sent = send_string_udp("successfully created board", s_udp, sin);
                         if (bytes_sent < 0) {
                             close(s_new);
@@ -253,7 +252,6 @@ int main(int argc, char* argv[]){
                     // board exists and in control
                     // write to the board
                     *board_info[board_name].os << board_info[board_name].line << " " << username << ": " << message << endl;
-                    board_info[board_name].os->flush();
 
                     // keep track of newly added line
                     int line_num = board_info[board_name].line;
@@ -299,9 +297,23 @@ int main(int argc, char* argv[]){
                     int line_num = atoi(message_number.c_str());
                     if(temp_map.find(line_num) != temp_map.end()){
                         // if it is, check to see if current user posted that message
-                        if(board_contents[board_name][atoi(message_number.c_str())].first == username){
+                        if(temp_map[line_num].first == username){
                             // if it is, delte it and recreate file
-
+                            temp_map.erase(line_num);
+                            board_contents[board_name] = temp_map;
+                            if(!recreate_file(board_info, board_contents, board_name)){
+                                close(s_new);
+                                close_fp(board_info);
+                                print_error_and_exit("error receiving operation", s_udp, s_tcp);
+                                
+                            }
+                            message = "Message " + message_number + " successfully deleted";
+                            bytes_sent = send_string_udp(message, s_udp, sin);
+                            if (bytes_sent < 0) {
+                                close(s_new);
+                                close_fp(board_info);
+                                print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                            }
                         }else {
                             // if it isn't, send message saying that you can't delete it
                             message = "Message " + message_number + " was not wrriten by you, so you cannot delte it";
