@@ -10,6 +10,10 @@
 
 using namespace std;
 
+bool has_only_spaces(const std::string& str) {
+   return str.find_first_not_of (" \t\n") == str.npos;
+}
+
 void print_usage_and_exit(){
     cout << "usage: myfrm server port" << endl;
     exit(1);

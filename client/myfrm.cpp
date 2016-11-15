@@ -121,10 +121,17 @@ int main(int argc, char* argv[]){
                 print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
             } else {
                 cout << "new board name: ";
+                board_name = "";
                 getline(cin,board_name);
+                if(board_name.size() == 0 || has_only_spaces(board_name)){
+                    while(board_name.size() == 0 || has_only_spaces(board_name)){
+                        cout << "please enter at least one character in board name: ";
+                        getline(cin,board_name);
+                    }
+                }
                 bytes_sent = send_string_udp(board_name, s_udp, sin);
                 if (bytes_sent < 0) {
-                    print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+                    print_error_and_exit("error sending board_name", s_udp, s_tcp);
                 } else {
                     string resp;
                     bytes_received = recv_string_udp(resp, s_udp, sin);
@@ -136,11 +143,22 @@ int main(int argc, char* argv[]){
             }
         } else if(operation == "LIS"){
             // case: list boards operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation LIS", s_udp, s_tcp);
+            }
+            string listing;
+            bytes_received = recv_string_udp(listing, s_udp, sin);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving listing", s_udp, s_tcp);
+            }
+            cout << listing;
+
         } else if(operation == "MSG"){
             // case: leave message operation
             bytes_sent = send_string_udp(operation, s_udp, sin);
             if (bytes_sent < 0) {
-                print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+                print_error_and_exit("error sending operation MSG", s_udp, s_tcp);
             }
             cout << "Enter board name to post on: ";
             getline(cin, board_name);
@@ -164,7 +182,7 @@ int main(int argc, char* argv[]){
             // delete message operation
             bytes_sent = send_string_udp(operation, s_udp, sin);
             if (bytes_sent < 0) {
-                print_error_and_exit("error sending operation CRT", s_udp, s_tcp);
+                print_error_and_exit("error sending operation DLT", s_udp, s_tcp);
             }
             cout << "Enter board name to delete from: ";
             getline(cin, board_name);

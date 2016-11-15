@@ -340,11 +340,22 @@ int main(int argc, char* argv[]){
                     if (bytes_sent < 0) {
                         close(s_new);
                         close_fp(board_info);
-                            print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
                     }
                 }
             } else if (operation == "EDT") {
             } else if (operation == "LIS") {
+                string listing;
+                for(auto const it: board_info){
+                    listing += it.first + "\n";
+                }
+
+                bytes_sent = send_string_udp(listing, s_udp, sin);
+                if (bytes_sent < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                }
             } else if (operation == "RDB") {
             } else if (operation == "APM") {
             } else if (operation == "DWN") {
