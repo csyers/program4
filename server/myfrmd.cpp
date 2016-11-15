@@ -14,7 +14,7 @@ void print_error_and_exit(string, int, int);
 int recreate_file(unordered_map<string, bi>, unordered_map<string, map<int,pair<string,string> > >, string);
 int main(int argc, char* argv[]){
     string port_temp, password, operation;
-    string board_name, message, message_number;
+    string board_name, message, message_number, new_message;
     string username;
     unordered_map<string, bi> board_info;
     unordered_map<string, map<int,pair<string,string> > > board_contents;
@@ -280,14 +280,14 @@ int main(int argc, char* argv[]){
                 if (bytes_received < 0) {
                     close(s_new);
                     close_fp(board_info);
-                    print_error_and_exit("error receiving operation", s_udp, s_tcp);
+                    print_error_and_exit("error receiving board name", s_udp, s_tcp);
                 }
 
                 bytes_received = recv_string_udp(message_number, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
                     close_fp(board_info);
-                    print_error_and_exit("error receiving operation", s_udp, s_tcp);
+                    print_error_and_exit("error message number", s_udp, s_tcp);
                 }
 
                 if (board_info.find(board_name) != board_info.end()) {
@@ -344,6 +344,80 @@ int main(int argc, char* argv[]){
                     }
                 }
             } else if (operation == "EDT") {
+                bytes_received = recv_string_udp(board_name, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving board name", s_udp, s_tcp);
+                }
+
+                bytes_received = recv_string_udp(message_number, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving message number", s_udp, s_tcp);
+                }
+
+                bytes_received = recv_string_udp(new_message, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving new message", s_udp, s_tcp);
+                }
+                if (board_info.find(board_name) != board_info.end()) {
+                    // board in control of this server
+                    // check to see if message_number is in this board
+                    map<int,pair<string,string> > temp_map = board_contents[board_name];
+                    int line_num = atoi(message_number.c_str());
+                    if(temp_map.find(line_num) != temp_map.end()){
+                        // if it is, check to see if current user posted that message
+                        if(temp_map[line_num].first == username){
+                            // if it is, update it and recreate the file
+                            temp_map[line_num].second = new_message;
+                            board_contents[board_name] = temp_map;
+                            if(!recreate_file(board_info, board_contents, board_name)){
+                                close(s_new);
+                                close_fp(board_info);
+                                print_error_and_exit("error recreating the board", s_udp, s_tcp);
+                                
+                            }
+                            message = "Message " + message_number + " successfully edited";
+                            bytes_sent = send_string_udp(message, s_udp, sin);
+                            if (bytes_sent < 0) {
+                                close(s_new);
+                                close_fp(board_info);
+                                print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                            }
+                        }else {
+                            // if it isn't, send message saying that you can't delete it
+                            message = "Message " + message_number + " was not wrriten by you, so you cannot delte it";
+                            bytes_sent = send_string_udp(message, s_udp, sin);
+                            if (bytes_sent < 0) {
+                                close(s_new);
+                                close_fp(board_info);
+                                print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                            }
+                        }
+                    } else {
+                        // if it isn't, send message saying that there is no such message in the board
+                        message = "Message " + message_number + " does not exist in board " + board_name;
+                        bytes_sent = send_string_udp(message, s_udp, sin);
+                        if (bytes_sent < 0) {
+                            close(s_new);
+                            close_fp(board_info);
+                            print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                        }
+                    }
+                } else {
+                    message = "Message board " + board_name + " does not exist";
+                    bytes_sent = send_string_udp(message, s_udp, sin);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        close_fp(board_info);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    }
+                }
+                
             } else if (operation == "LIS") {
                 string listing;
                 for(auto const it: board_info){
@@ -354,12 +428,55 @@ int main(int argc, char* argv[]){
                 if (bytes_sent < 0) {
                     close(s_new);
                     close_fp(board_info);
-                    print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    print_error_and_exit("error sending listing", s_udp, s_tcp);
                 }
             } else if (operation == "RDB") {
             } else if (operation == "APM") {
             } else if (operation == "DWN") {
             } else if (operation == "DST") {
+                bytes_received = recv_string_udp(board_name, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving board name", s_udp, s_tcp);
+                }
+                if(board_info.find(board_name) != board_info.end()){
+                    if(board_info[board_name].creator == username){
+                        // destroy board
+                        board_info[board_name].os->close();
+                        delete board_info[board_name].os;
+                        board_info[board_name].os = 0;
+                        board_info.erase(board_name);
+                        remove(board_name.c_str());
+                        // send success message
+                        message = "Board " + board_name + " successfully destroyed";
+                        bytes_sent = send_string_udp(message, s_udp, sin);
+                        if (bytes_sent < 0) {
+                            close(s_new);
+                            close_fp(board_info);
+                            print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                        }
+
+                    } else {
+                        // send error
+                        message = "Board " + board_name + " was not created by you, so you cannot destroy it";
+                        bytes_sent = send_string_udp(message, s_udp, sin);
+                        if (bytes_sent < 0) {
+                            close(s_new);
+                            close_fp(board_info);
+                            print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                        }
+                    }
+                } else {
+                    // send error
+                    message = "Message board " + board_name + " does not exist";
+                    bytes_sent = send_string_udp(message, s_udp, sin);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        close_fp(board_info);
+                        print_error_and_exit("error sending confirmation", s_udp, s_tcp);
+                    }
+                }
             } else if (operation == "XIT") {
                 close(s_new);
                 break;

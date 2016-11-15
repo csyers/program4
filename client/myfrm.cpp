@@ -110,7 +110,7 @@ int main(int argc, char* argv[]){
     }
     // local variables for operations passing
     string operation;
-    string board_name, message, message_number, resp;
+    string board_name, message, message_number, resp, new_message;
 
     cout << "Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): ";
     while(getline(cin,operation)){
@@ -133,7 +133,6 @@ int main(int argc, char* argv[]){
                 if (bytes_sent < 0) {
                     print_error_and_exit("error sending board_name", s_udp, s_tcp);
                 } else {
-                    string resp;
                     bytes_received = recv_string_udp(resp, s_udp, sin);
                     if (bytes_received < 0) {
                         print_error_and_exit("error in receiving confirmation", s_udp, s_tcp);
@@ -205,12 +204,57 @@ int main(int argc, char* argv[]){
             // case read baord operation
         } else if(operation == "EDT"){
             // case: edit file operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation EDT", s_udp, s_tcp);
+            }
+            cout << "Enter board name to modify post on: ";
+            getline(cin, board_name);
+            cout << "Enter message number to modify: ";
+            getline(cin, message_number);
+            cout << "Enter new message: ";
+            getline(cin,new_message);
+
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board name", s_udp, s_tcp);
+            }
+            bytes_sent = send_string_udp(message_number, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending message number", s_udp, s_tcp);
+            }
+            bytes_sent = send_string_udp(new_message, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending message number", s_udp, s_tcp);
+            }
+            bytes_received = recv_string_udp(resp, s_udp, sin);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving response", s_udp, s_tcp);
+            }
+            cout << resp << endl;
+
         } else if(operation == "APN"){
             // case: append file operation
         } else if(operation == "DWN"){
             // case: download file operation
         } else if(operation == "DST"){
             // case: destroy board operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation DST", s_udp, s_tcp);
+            }
+            cout << "Enter board name to destroy: ";
+            getline(cin, board_name);
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board name", s_udp, s_tcp);
+            }
+            bytes_received = recv_string_udp(resp, s_udp, sin);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving response", s_udp, s_tcp);
+            }
+            cout << resp << endl;
+
         } else if(operation == "XIT"){
             // case: exit client connection operation
             bytes_sent = send_string_udp(operation, s_udp, sin);
@@ -232,7 +276,6 @@ int main(int argc, char* argv[]){
                 if (bytes_sent < 0) {
                     print_error_and_exit("error sending password", s_udp, s_tcp);
                 } else {
-                    string resp;
                     bytes_received = recv_string_udp(resp, s_udp, sin);
                     if (bytes_received < 0) {
                         print_error_and_exit("error in receiving confirmation", s_udp, s_tcp);
