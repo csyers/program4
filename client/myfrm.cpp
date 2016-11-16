@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
     bzero((char *)&sin,sizeof(sin));
     sin.sin_family = AF_INET;
     bcopy(hp->h_addr,(char *)&sin.sin_addr,hp->h_length);
-    sin.sin_port = port;
+    sin.sin_port = htons(port);
 
     // open a UDP socket, exit if there is an error
     if((s_udp=socket(PF_INET,SOCK_DGRAM,0))<0){

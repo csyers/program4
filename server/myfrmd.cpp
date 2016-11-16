@@ -61,7 +61,7 @@
     bzero((char *)&sin,sizeof(sin));
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = port;
+    sin.sin_port = htons(port);
 
     // open a tcp socket, exit if there is an error
     if((s_tcp=socket(PF_INET,SOCK_STREAM,0)) < 0){
