@@ -164,7 +164,6 @@ int send_file_tcp(string filename, int s_new) {
     // read some bytes from the file
     int nred = fread(buf, 1, MAX_LENGTH, fp);
     buf[nred] = '\0';
-    cout << buf << endl;
 
     // if some bytes were read, send them to the client
     if (nred > 0) {
@@ -172,7 +171,6 @@ int send_file_tcp(string filename, int s_new) {
         {
             return -1;
         }
-        cout << nsent << endl;
         bytes_sent += nsent;
     }
     // if fewer than MAX_LINE bytes were read, there could be an error

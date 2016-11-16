@@ -549,25 +549,33 @@
                     print_error_and_exit("error in receiving filesize", s_udp, s_tcp);
                 }
 
-                cout << filesize << endl;
 
                 // recv file
                 if (filesize > 0) {
-                    ofstream os;
-                    os.open(filename.c_str(), ios::binary|ios::app);
-                    while (filesize > 0) {
-                        bytes_received = recv_file_tcp(message, s_new);
-                        if (bytes_received < 0) {
+                    FILE *fp;
+                    int remaining_filesize = filesize;
+                    unsigned int bytesreceived;
+                    char buf[MAX_LENGTH];
+                    if(!(fp = fopen(filename.c_str(), "w+"))) {
+                            close(s_new);
+                            close_fp(board_info);
+                            print_error_and_exit("error in receiving file", s_udp, s_tcp);
+                    }
+                    while (remaining_filesize > 0) {
+                        bytesreceived = recv(s_new, buf, MAX_LINE > remaining_filesize ? remaining_filesize: MAX_LINE, 0);
+                        if(bytesreceived < 0) {
                             close(s_new);
                             close_fp(board_info);
                             print_error_and_exit("error in receiving file", s_udp, s_tcp);
                         }
-                        os << message;
-                        filesize -= bytes_received;
-                        cout << filesize << endl;
+                        remaining_filesize -= bytesreceived;
+                        if(fwrite(buf, sizeof(char), bytesreceived, fp) < bytesreceived) {
+                            close(s_new);
+                            close_fp(board_info);
+                            print_error_and_exit("error in receiving file", s_udp, s_tcp);
+                        }
                     }
-                    cout << "out" << endl;
-                    os.close();
+                    fclose(fp);
                     file_info[board_name].push_back(filename);
 
                     // add message to board
