@@ -44,11 +44,57 @@ is the port number the server was started with.
 From there, follow the prompt at the program to use the message application.
 
 Examples (at client):
+please enter username: Chris
+please enter new password for new user: password
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): CRT
+new board name: board1
+successfully created board
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): MSG
+Enter board name to post on: baord1
+Enter message: hello world
+Message board baord1 does not exist
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): MSG
+Enter board name to post on: board1
+Enter message: hello world
+Message appended to board board1
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): DLT
+Enter board name to delete from: board1
+Enter message number to be deleted: 0
+Message 0 successfully deleted
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): MSG
+Enter board name to post on: board1
+Enter message: hello again
+Message appended to board board1
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): RDB
+Enter board name to read: board1
+Chris
+1 Chris: hello again
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): EDT
+Enter board name to modify post on: board1
+Enter message number to modify: 1
+Enter new message: new message
+Message 1 successfully edited
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): RDB
+Enter board name to read: board1
+Chris
+1 Chris: new message
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): LIS
+board1
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): APN
+Enter board name: board1
+Enter file to append: SmallFile.txt
+SmallFile.txt
+board board1 exists and file board1-SmallFile.txt can be appended. Appending
+Enter operation (CRT, LIS, MSG, DLT, RDB, EDT, APN, DWN, DST, XIT, SHT): SHT
+password: abc
+Server shutdown. Goodbye
 
-
+Other input sequences are possible as well.
 
 
 KNOWN ERRORS:
+
+APN does not work with symbolic links. Use regular files.
 
 Sometime when running the server, the following errors will be shown:
 
