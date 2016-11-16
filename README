@@ -1,1 +1,68 @@
-Put stuff here.
+Names: Christopher Syers and Tim Chang
+NetIDS: csyers and tchang2
+Computer Networks - CSE 30264 - Programming Assignment 4
+
+Goal: Program a Prototype of a Message Board Forum Application
+November 16 ,2016
+
+INCLUDED FILES:
+    README - this readme file
+    server - server subdirectory
+        myfrmd.c - source code of server
+        Makefile - makefile for server
+    client - client subdirectory
+        myfrm.c - source code of client
+        Makefile - makefile for client
+        SmallFile.txt - link to test file 1
+        MediumFile.pdf - link to test file 2
+        LargeFile.pdf - link to test file 3
+
+This directory contains two subdirectories - one for the client and 
+one for the server. To start the server, change into the server 
+directory and type the command:
+
+$ make
+
+This will create an executable called myfrmd. To start the server, use
+the following commnad:
+
+$ ./myfrmd portno password
+
+where portno is any port (41010 used for testing) and password is any 
+string that will be used as the admin password. On another student machine, 
+chang into the client subdirectory and type:
+
+$ make
+
+to create the client executable, called myfrm. To run the client, type:
+
+$ ./myfrm hostname portno
+
+where hostname is the hostname of the machine running the server, and portno 
+is the port number the server was started with.
+
+From there, follow the prompt at the program to use the message application.
+
+Examples (at client):
+
+
+
+
+KNOWN ERRORS:
+
+Sometime when running the server, the following errors will be shown:
+
+./myfrmd: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.18' not found (required by ./myfrmd)
+./myfrmd: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.14' not found (required by ./myfrmd)
+./myfrmd: /usr/lib64/libstdc++.so.6: version `CXXABI_1.3.5' not found (required by ./myfrmd)
+
+To fix this problem, type the following commands:
+
+$ source ~lsyers/.cshrc
+$ make clean
+$ make
+
+This will create a new executable that should be able to run error free.
+
+The server only seems to work properly on machines student00 and student03. 
+The reason for this is unknown.
