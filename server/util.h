@@ -1,3 +1,9 @@
+/* Name: Tim Chang (tchang2), Christopher Syers (csyers)
+ * Date: November 1, 2016
+ * CSE 30264: Computer Networks
+ * Programming Assignment 4: Program a Prototype of a Message Board Forum application
+ */
+
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -15,6 +21,7 @@
 
 using namespace std;
 
+// board info struct with info about creator, the next line to be written, and a stream to write to it
 struct bi {
     string creator;
     int line;
@@ -44,8 +51,10 @@ int recreate_file(unordered_map<string, bi> board_info, unordered_map<string, ma
         return 0;
     }
 
+    // write the creator to the file
     *board_info[board_name].os << board_info[board_name].creator << endl;
 
+    // write each line in the contents to the file
     for (auto const it: board_contents[board_name]){
         *board_info[board_name].os << it.first << " " << it.second.first << ": " << it.second.second << endl;
     }
@@ -53,6 +62,7 @@ int recreate_file(unordered_map<string, bi> board_info, unordered_map<string, ma
     return 1;
 }
 
+// close all streams that may be open 
 void close_fp(unordered_map<string, bi> board_info){
     for (auto &it: board_info) {
         it.second.os->close();
@@ -61,11 +71,13 @@ void close_fp(unordered_map<string, bi> board_info){
     }
 }
 
+// print usage message and exit the program
 void print_usage_and_exit(){
     cout << "usage: myfrmd port password" << endl;
     exit(1);
 }
 
+// print erorr message, perform cleanup, and exit the program
 void print_error_and_exit(string message, int s_tcp, int s_udp){
     cerr << "myfrmd: " << message << endl;
     if(s_tcp > 0){
@@ -77,56 +89,73 @@ void print_error_and_exit(string message, int s_tcp, int s_udp){
     exit(1);
 }
 
+// send a string over a udp link
 int send_string_udp(string message, int s, struct sockaddr_in &sin) {
+    // local varialbes needed for sending
     char buf[MAX_LENGTH];
     bzero(buf, sizeof(buf));
     strcpy(buf, message.c_str());
     int msg_len = strlen(buf) ;
     int bytes_sent;
 
+    /// send the message to the sin address
     if((bytes_sent=sendto(s, buf, msg_len, 0, (struct sockaddr *) &sin, sizeof(sin))) < 0) {
+        // if error, return -1
         return -1;
     } else {
+        // else, return the number of bytes sent
         return bytes_sent;
     }
 }
 
+// receive a string over a udp link
 int recv_string_udp(string &resp, int s_udp, struct sockaddr_in &sin) {
+    // local variables needed for receiving
     char buf[MAX_LENGTH];
     bzero(buf, sizeof(buf));
     int bytes_received;
     socklen_t addr_len = sizeof(sin);
 
+    // receive the message from the s_udp port
     if ((bytes_received=recvfrom(s_udp, buf, sizeof(buf), 0, (struct sockaddr *) &sin, &addr_len)) < 0) {
+    // receive the message from the s_udp port
         return -1;
     } else {
+        // else, populate response string and returns the number of bytes received
         string temp(buf);
         resp = temp;
         return bytes_received;
     }
 }
 
+// receive a string over a tcp link
 int recv_string_tcp(string &resp, int s_new) {
+    // local variables needed
     char buf[MAX_LENGTH];
     bzero(buf, sizeof(buf));
     int bytes_received;
 
+    // receive from the tcp port
     if ((bytes_received=recv(s_new, buf, sizeof(buf),0))==-1) {
         return -1;
     } else {
+        // populate response string and return bytes received
         string temp(buf);
         resp = temp;
         return bytes_received;
     }
 }
 
+// send a string over a tcp link
 int send_string_tcp(string message, int s_new) {
+    // local variables
     char buf[MAX_LENGTH];
     bzero(buf, sizeof(buf));
     strcpy(buf, message.c_str());
     int msg_len = strlen(buf) ;
     int bytes_sent;
 
+    // send the string, return -1 on error
     if ((bytes_sent=send(s_new, &buf, msg_len, 0)) < 0) {
         return -1;
     } else {
@@ -134,10 +163,13 @@ int send_string_tcp(string message, int s_new) {
     }
 }
 
+// send an integer over a tcp link
 int send_int_tcp(int msg, int s_new) {
     int bytes_sent;
 
+    // convert to network endianess
     msg = htonl(msg);
+    // send the integer, return -1 on error
     if ((bytes_sent=send(s_new, &msg, sizeof(msg), 0))==-1) {
         return -1;
     } else {
@@ -145,9 +177,11 @@ int send_int_tcp(int msg, int s_new) {
     }
 }
 
+// recieve an integer over a tcp link
 int recv_int_tcp(int &msg, int s_new) {
     int bytes_recv;
 
+    // receive the integer, return -1 on error
     if ((bytes_recv=recv(s_new, &msg, sizeof(int), 0))==-1) {
         return -1;
     } else {
@@ -156,6 +190,7 @@ int recv_int_tcp(int &msg, int s_new) {
     }
 }
 
+// receive file from tcp link
 int recv_file_tcp(string &resp, int s_tcp) {
     int bytes_recv;
     char buf[MAX_LENGTH];
@@ -170,13 +205,15 @@ int recv_file_tcp(string &resp, int s_tcp) {
     return bytes_recv;
 }
 
+// send file over tcp link
 int send_file_tcp(fstream &os, int s_new) {
     char buf[MAX_LENGTH];
     int bytes_sent = 0;
     int nsent;
     streampos pos = os.tellg();
     os.seekg(0, os.beg);
-
+    
+    // while there are still charcters to read,
     while (!os.eof()) {
         bzero(buf, sizeof(buf));
         os.read(buf, MAX_LENGTH);
@@ -184,12 +221,14 @@ int send_file_tcp(fstream &os, int s_new) {
             cout << "fail to read" << endl;
             return -1;
         }
+        // send a piece of the file
         if ((nsent=send(s_new, &buf, strlen(buf), 0)) < 0) {
             return -1;
         } else {
             bytes_sent += nsent;
         }
     }
+    // reset stream
     os.clear();
     os.seekg(pos);
     return bytes_sent;

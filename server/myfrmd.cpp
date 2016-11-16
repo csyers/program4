@@ -16,9 +16,14 @@
     string port_temp, password, operation;
     string board_name, message, message_number, new_message;
     string username;
+
+    // map from board name to its info (creator, stream, current line)
     unordered_map<string, bi> board_info;
+    // map from board name to map of line number to author and message
     unordered_map<string, map<int,pair<string,string> > > board_contents;
+    // map from username to passwords
     unordered_map<string,string> users;
+    // map from board name to file appended to that board
     unordered_map<string, vector<string> > file_info;
     int port;
     int s_udp = -1;
@@ -100,8 +105,7 @@
             close_fp(board_info);
             print_error_and_exit("error in accept", s_udp, s_tcp);
         }
-
-        // send prelim message
+       // send prelim message
         string flag;
         bytes_received = recv_string_udp(flag, s_udp, sin);
         if (bytes_received < 0) {
@@ -109,7 +113,6 @@
             close_fp(board_info);
             print_error_and_exit("error receiving operation", s_udp, s_tcp);
         }
-
         // infinite loop for user login
         while(1){
             // request username
@@ -135,12 +138,14 @@
                     close_fp(board_info);
                     print_error_and_exit("error sending confirmation", s_udp, s_tcp);
                 }
+                // get password
                 bytes_received = recv_string_udp(user_password, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
                     close_fp(board_info);
                     print_error_and_exit("error receiving operation", s_udp, s_tcp);
                 }
+                // set password in map and send success message
                 users[username] = user_password;
                 bytes_sent = send_string_udp("success", s_udp, sin);
                 if (bytes_sent < 0) {
@@ -158,6 +163,7 @@
                     print_error_and_exit("error sending confirmation", s_udp, s_tcp);
 
                 }
+                // receive password entry from user
                 bytes_received = recv_string_udp(user_password, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -186,7 +192,7 @@
         }
         // infinite loop while in connection with client
         while(1){
-            // do something
+            // get the operation
             bytes_received = recv_string_udp(operation, s_udp, sin);
             if (bytes_received < 0) {
                 close(s_new);
@@ -195,6 +201,8 @@
             }
 
             if (operation == "CRT") {
+                // case: client wants to create a board
+                // get board name
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -211,11 +219,14 @@
                         close_fp(board_info);
                         print_error_and_exit("error in opening file",s_udp,s_tcp);
                     } else {
+                        // populate info struct
                         bi1.creator = username;
                         bi1.line = 0;
+                        // map a blank map for new board
                         map<int,pair<string,string> > line_map;
                         board_info.insert(pair<string, bi>(board_name, bi1));
                         board_contents[board_name] = line_map;
+                        // print username to first line of file
                         *bi1.os << username << endl;
                         bytes_sent = send_string_udp("successfully created board", s_udp, sin);
                         if (bytes_sent < 0) {
@@ -244,6 +255,8 @@
                     }
                 }
             } else if (operation == "MSG") {
+                //case: client wants to post a MSG on a board
+                // get board name from client
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -251,6 +264,7 @@
                     print_error_and_exit("error receiving operation", s_udp, s_tcp);
                 }
 
+                // get message from client
                 bytes_received = recv_string_udp(message, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -268,6 +282,7 @@
                     board_contents[board_name][line_num] = make_pair(username, message);
                     board_info[board_name].line++;
 
+                    // send success message back
                     message = "Message appended to board " + board_name;
                     bytes_sent = send_string_udp(message, s_udp, sin);
                     if (bytes_sent < 0) {
@@ -276,6 +291,7 @@
                         print_error_and_exit("error sending confirmation", s_udp, s_tcp);
                     }
                 } else {
+                    // board does not exists, send error message back
                     message = "Message board " + board_name + " does not exist";
                     bytes_sent = send_string_udp(message, s_udp, sin);
                     if (bytes_sent < 0) {
@@ -286,6 +302,8 @@
                     
                 }
             } else if (operation == "DLT") {
+                // case: user wants to delete message
+                // get baord name
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -293,6 +311,7 @@
                     print_error_and_exit("error receiving board name", s_udp, s_tcp);
                 }
 
+                // get message number to delete
                 bytes_received = recv_string_udp(message_number, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -345,6 +364,7 @@
                         }
                     }
                 } else {
+                    // if the board does not exits, tell use
                     message = "Message board " + board_name + " does not exist";
                     bytes_sent = send_string_udp(message, s_udp, sin);
                     if (bytes_sent < 0) {
@@ -354,6 +374,8 @@
                     }
                 }
             } else if (operation == "EDT") {
+                // case: client wants to EDIT a message
+                // receive board_name from client
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -361,6 +383,7 @@
                     print_error_and_exit("error receiving board name", s_udp, s_tcp);
                 }
 
+                // get message_number from client
                 bytes_received = recv_string_udp(message_number, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -368,6 +391,7 @@
                     print_error_and_exit("error receiving message number", s_udp, s_tcp);
                 }
 
+                // get new message from client
                 bytes_received = recv_string_udp(new_message, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -419,6 +443,7 @@
                         }
                     }
                 } else {
+                    // tell user that the board doesn't exist
                     message = "Message board " + board_name + " does not exist";
                     bytes_sent = send_string_udp(message, s_udp, sin);
                     if (bytes_sent < 0) {
@@ -429,11 +454,14 @@
                 }
                 
             } else if (operation == "LIS") {
+                // case: use wants to list boards
+                // make a string with all of the board names
                 string listing;
                 for(auto const it: board_info){
                     listing += it.first + "\n";
                 }
 
+                // send that listing over udp
                 bytes_sent = send_string_udp(listing, s_udp, sin);
                 if (bytes_sent < 0) {
                     close(s_new);
@@ -441,6 +469,7 @@
                     print_error_and_exit("error sending listing", s_udp, s_tcp);
                 }
             } else if (operation == "RDB") {
+                // case: client wants to see the contents of a board
                 // receive board to read
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
@@ -643,6 +672,8 @@
                     }
                 }
             } else if (operation == "DST") {
+                // case: user wants to destroy the a board
+                // get board name
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
                     close(s_new);
@@ -650,8 +681,9 @@
                     print_error_and_exit("error receiving board name", s_udp, s_tcp);
                 }
                 if(board_info.find(board_name) != board_info.end()){
+                    // if the baord is in control of the server
                     if(board_info[board_name].creator == username){
-                        // destroy board
+                        // if the creator of the board is the current user
                         board_info[board_name].os->close();
                         delete board_info[board_name].os;
                         board_info[board_name].os = 0;
@@ -667,7 +699,7 @@
                         }
 
                     } else {
-                        // send error
+                        // send error saying creator board is not the same as current user
                         message = "Board " + board_name + " was not created by you, so you cannot destroy it";
                         bytes_sent = send_string_udp(message, s_udp, sin);
                         if (bytes_sent < 0) {
@@ -677,7 +709,7 @@
                         }
                     }
                 } else {
-                    // send error
+                    // send error saying board is not in control of this server
                     message = "Message board " + board_name + " does not exist";
                     bytes_sent = send_string_udp(message, s_udp, sin);
                     if (bytes_sent < 0) {
@@ -687,9 +719,11 @@
                     }
                 }
             } else if (operation == "XIT") {
+                // close curent connection and wait for another
                 close(s_new);
                 break;
             } else if (operation == "SHT") {
+                // get the admin password attemp from user
                 string client_password;
                 bytes_received = recv_string_udp(client_password, s_udp, sin);
                 if (bytes_received < 0) {
@@ -698,7 +732,9 @@
                     print_error_and_exit("error receiving operation", s_udp, s_tcp);
                 }
 
+                // if it is correct:
                 if (password == client_password) {
+                    // send success message to user
                     bytes_sent = send_string_udp("success", s_udp, sin);
                     if (bytes_sent < 0) {
                         close(s_new);
@@ -716,13 +752,16 @@
                                 remove(it.c_str());
                             }
                         }
+                        // close all sockets and exit
                         close(s_new);
                         close(s_udp);
                         close(s_tcp);
                         close_fp(board_info);
                         return 0;
                     }
+                // if the password is incorrect
                 } else {
+                    // send failure indication
                     bytes_sent = send_string_udp("failure", s_udp, sin);
                     if (bytes_sent < 0) {
                         close(s_new);
