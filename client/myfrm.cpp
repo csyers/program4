@@ -261,7 +261,6 @@ int main(int argc, char* argv[]){
                     // receive file from client piece by piece and print it out
                     bytes_received = recv_file_tcp(message, s_tcp);
                     cout << message;
-                    //message = "";
                     filesize -= bytes_received;
                 }
             } 
@@ -351,7 +350,6 @@ int main(int argc, char* argv[]){
                 } 
             // file can be appended
             } else if (flag == 0){
-                cout << filename << endl;
                 if(access(filename.c_str(), F_OK) == -1) {
                     // if the file doesn't exist on the client size, send error of -1 to server
                     cout << filename << " does not exist" << endl;
@@ -369,7 +367,6 @@ int main(int argc, char* argv[]){
                     os.seekp(0, os.beg);
 
                     
-                    //cout << filesize << endl;
 
                     // send filesize
                     bytes_sent = send_int_tcp(filesize, s_tcp);
@@ -430,16 +427,24 @@ int main(int argc, char* argv[]){
                 ofstream os;
                 filename = board_name + "-" + filename;
                 os.open(filename.c_str(), ios::app);
+                    FILE *fp;
+                    int remaining_filesize = filesize;
+                    unsigned int bytesreceived;
+                    char buf[MAX_LENGTH];
                 // receive the file piece by peice
-                while (filesize > 0) {
-                    bytes_received = recv_file_tcp(message, s_tcp);
-                    if (bytes_received < 0) {
-                        print_error_and_exit("error in receiving response", s_udp, s_tcp);
+                    if(!(fp = fopen(filename.c_str(), "w+"))) {
+                            print_error_and_exit("error in receiving file", s_udp, s_tcp);
                     }
-                    //cout << "bytes recv: " << bytes_received << endl;
-                    os << message;
-                    filesize -= bytes_received;
-                }
+                    while (remaining_filesize > 0) {
+                        bytesreceived = recv(s_tcp, buf, MAX_LENGTH > remaining_filesize ? remaining_filesize: MAX_LENGTH, 0);
+                        if(bytesreceived < 0) {
+                            print_error_and_exit("error in receiving file", s_udp, s_tcp);
+                        }
+                        remaining_filesize -= bytesreceived;
+                        if(fwrite(buf, sizeof(char), bytesreceived, fp) < bytesreceived) {
+                            print_error_and_exit("error in receiving file", s_udp, s_tcp);
+                        }
+                    } fclose(fp);
                 // close os and print success message
                 os.close();
                 cout << "file " << filename << " successfully downloaded" << endl;

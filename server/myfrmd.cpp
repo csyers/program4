@@ -29,7 +29,6 @@
     int s_udp = -1;
     int s_tcp = -1;
     int bytes_received, bytes_sent;
-    //struct stat st;
     int filesize;
 
     // check the nubmer of agurmnets
@@ -491,7 +490,7 @@
                     } 
 
                     // send file
-                    bytes_sent = send_file_tcp(*board_info[board_name].os, s_new);
+                    bytes_sent = send_file_tcp1(*board_info[board_name].os, s_new);
                     if (bytes_sent < 0) {
                         close(s_new);
                         close_fp(board_info);
@@ -640,7 +639,6 @@
                     vector<string> fvector = file_info[board_name];
                     if (find(fvector.begin(), fvector.end(), filename) != fvector.end()) {
                         // file is appended to this board
-                        //bi temp = board_info[board_name];
                         fstream os (filename, ios::in|ios::app);
                         os.seekp(0, os.end);
                         filesize = os.tellp();
@@ -663,8 +661,7 @@
 
                 // send file
                 if (filesize > 0) {
-                    fstream os(filename, ios::in|ios::app);
-                    bytes_sent = send_file_tcp(os, s_new);
+                    bytes_sent = send_file_tcp(filename, s_new);
                     if (bytes_sent < 0) {
                         close(s_new);
                         close_fp(board_info);
