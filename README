@@ -56,13 +56,11 @@ Sometime when running the server, the following errors will be shown:
 ./myfrmd: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.14' not found (required by ./myfrmd)
 ./myfrmd: /usr/lib64/libstdc++.so.6: version `CXXABI_1.3.5' not found (required by ./myfrmd)
 
+This problem has something to do with the environment setup
 To fix this problem, type the following commands:
 
-$ source ~lsyers/.cshrc
+$ source ~lsyers/Public/.cshrc
 $ make clean
 $ make
 
 This will create a new executable that should be able to run error free.
-
-The server only seems to work properly on machines student00 and student03. 
-The reason for this is unknown.
