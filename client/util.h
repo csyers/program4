@@ -123,32 +123,6 @@ int recv_file_tcp(string &resp, int s_tcp) {
     return bytes_recv;
 }
 
-int send_file_tcp1(fstream os, int s_new) {
-    char buf[MAX_LENGTH];
-    int bytes_sent = 0;
-    int nsent;
-    streampos pos = os.tellg();
-    os.seekg(0, os.beg);
-
-    while (!os.eof()) {
-        bzero(buf, sizeof(buf));
-        os.read(buf, MAX_LENGTH);
-        if(!os.eof() && os.fail()) {
-            cout << "fail to read" << endl;
-            return -1;
-        }
-        if ((nsent=send(s_new, &buf, strlen(buf), 0)) < 0) {
-            return -1;
-        } else {
-            cout << "adding: " << nsent << endl;
-            bytes_sent += nsent;
-        }
-    }
-    os.clear();
-    os.seekg(pos);
-    return bytes_sent;
-}
-
 int send_file_tcp(string filename, int s_new) {
     char buf[MAX_LENGTH];
     int bytes_sent = 0;

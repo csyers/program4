@@ -206,7 +206,7 @@ int recv_file_tcp(string &resp, int s_tcp) {
 }
 
 // send file over tcp link
-int send_file_tcp(fstream &os, int s_new) {
+int send_file_tcp1(fstream &os, int s_new) {
     char buf[MAX_LENGTH];
     int bytes_sent = 0;
     int nsent;
@@ -231,5 +231,42 @@ int send_file_tcp(fstream &os, int s_new) {
     // reset stream
     os.clear();
     os.seekg(pos);
+    return bytes_sent;
+}
+
+int send_file_tcp(string filename, int s_new) {
+    char buf[MAX_LENGTH];
+    int bytes_sent = 0;
+    int nsent;
+    FILE *fp;
+
+    if (!(fp = fopen(filename.c_str(), "r"))) {
+        return -1;
+    }
+
+    while(1) {
+    bzero((char *)buf, sizeof(buf));
+    // read some bytes from the file
+    int nred = fread(buf, 1, MAX_LENGTH, fp);
+    buf[nred] = '\0';
+
+    // if some bytes were read, send them to the client
+    if (nred > 0) {
+        if((nsent=send(s_new, &buf, nred, 0))==-1)
+        {
+            return -1;
+        }
+        bytes_sent += nsent;
+    }
+    // if fewer than MAX_LINE bytes were read, there could be an error
+    if (nred < MAX_LENGTH) {
+        // if there was an error, exit
+        // else break out of the while look
+        if(ferror(fp)) {
+            return -1;
+        }
+        break;
+    }
+    }
     return bytes_sent;
 }
