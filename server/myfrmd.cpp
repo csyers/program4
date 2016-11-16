@@ -19,6 +19,7 @@
     unordered_map<string, bi> board_info;
     unordered_map<string, map<int,pair<string,string> > > board_contents;
     unordered_map<string,string> users;
+    unordered_map<string, vector<string> > file_info;
     int port;
     int s_udp = -1;
     int s_tcp = -1;
@@ -453,7 +454,6 @@
                     bi temp = board_info[board_name];
                     temp.os->seekp(0, temp.os->end);
                     filesize = temp.os->tellp();
-                    cout << filesize << endl;
                     bytes_sent = send_int_tcp(filesize, s_new);
                     if (bytes_sent < 0) {
                         close(s_new);
@@ -462,13 +462,12 @@
                     } 
 
                     // send file
-                    bytes_sent = send_file_tcp(board_info[board_name].os, s_new);
+                    bytes_sent = send_file_tcp(*board_info[board_name].os, s_new);
                     if (bytes_sent < 0) {
                         close(s_new);
                         close_fp(board_info);
                         print_error_and_exit("error sending -1", s_udp, s_tcp);
                     }
-                    cout << bytes_sent << endl;
                 } else {
                     // board dne
                     bytes_sent = send_int_tcp(-1, s_new);
@@ -478,8 +477,163 @@
                         print_error_and_exit("error sending -1", s_udp, s_tcp);
                     } 
                 }
-            } else if (operation == "APM") {
+            } else if (operation == "APN") {
+                int flag;
+                string msg;
+                string filename, old_filename;
+                // receive board to read
+                bytes_received = recv_string_udp(board_name, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving board name", s_udp, s_tcp);
+                }
+
+                // receive file to read
+                bytes_received = recv_string_udp(filename, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving file name", s_udp, s_tcp);
+                }
+
+                // does board exist?
+                if (board_info.find(board_name)!=board_info.end()) {
+                    // board exist 
+                    old_filename = filename;
+                    filename = board_name + "-" + filename;
+                    vector<string> fvector = file_info[board_name];
+                    if (find(fvector.begin(), fvector.end(), filename) == fvector.end()) {
+                        // file has not yet been appended 
+                        if(access(filename.c_str(), F_OK) == -1){
+                            // file doesn't exist
+                            flag = 0;
+                            msg = "board " + board_name + " exists and file " + filename + " can be appended. Appending";
+                        } else {
+                            // file already exists
+                            flag = -1;
+                            msg = "file " + filename + " already exists elsewhere";
+                        }
+                    } else {
+                        // file already appended to board
+                        flag = -1;
+                        msg = "file " + filename + " already appended to board";
+                    } 
+                } else {
+                    // board dne
+                    flag = -1;
+                    msg = "board " + board_name + " doest not exist";
+                }
+
+                // send flag
+                bytes_sent = send_int_tcp(flag, s_new);
+                if (bytes_sent < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error sending flag", s_udp, s_tcp);
+                } 
+
+                // send message
+                bytes_sent = send_string_tcp(msg, s_new);
+                if (bytes_sent < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error sending message", s_udp, s_tcp);
+                } 
+
+                // receive filesize
+                bytes_received = recv_int_tcp(filesize, s_new);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error in receiving filesize", s_udp, s_tcp);
+                }
+
+                cout << filesize << endl;
+
+                // recv file
+                if (filesize > 0) {
+                    ofstream os;
+                    os.open(filename.c_str(), ios::binary|ios::app);
+                    while (filesize > 0) {
+                        bytes_received = recv_file_tcp(message, s_new);
+                        if (bytes_received < 0) {
+                            close(s_new);
+                            close_fp(board_info);
+                            print_error_and_exit("error in receiving file", s_udp, s_tcp);
+                        }
+                        os << message;
+                        filesize -= bytes_received;
+                        cout << filesize << endl;
+                    }
+                    cout << "out" << endl;
+                    os.close();
+                    file_info[board_name].push_back(filename);
+
+                    // add message to board
+                    string msg = "appended " + old_filename + " to the board";
+                    *board_info[board_name].os << board_info[board_name].line << " " << username << ": " << msg << endl;
+                    // keep track of line
+                    int line_num = board_info[board_name].line;
+                    board_contents[board_name][line_num] = make_pair(username, msg);
+                    board_info[board_name].line++;
+                }
             } else if (operation == "DWN") {
+                string filename;
+                // receive board to read
+                bytes_received = recv_string_udp(board_name, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving board name", s_udp, s_tcp);
+                }
+
+                // receive file to read
+                bytes_received = recv_string_udp(filename, s_udp, sin);
+                if (bytes_received < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error receiving file name", s_udp, s_tcp);
+                }
+
+                // does board exist?
+                if (board_info.find(board_name)!=board_info.end()) {
+                    // board exist 
+                    filename = board_name + "-" + filename;
+                    vector<string> fvector = file_info[board_name];
+                    if (find(fvector.begin(), fvector.end(), filename) != fvector.end()) {
+                        // file is appended to this board
+                        //bi temp = board_info[board_name];
+                        fstream os (filename, ios::in|ios::app);
+                        os.seekp(0, os.end);
+                        filesize = os.tellp();
+                    } else {
+                        // file is not appended to board
+                        filesize = -1;
+                    } 
+                } else {
+                    // board dne
+                    filesize = -2;
+                }
+
+                // send filesize
+                bytes_sent = send_int_tcp(filesize, s_new);
+                if (bytes_sent < 0) {
+                    close(s_new);
+                    close_fp(board_info);
+                    print_error_and_exit("error sending -1", s_udp, s_tcp);
+                } 
+
+                // send file
+                if (filesize > 0) {
+                    fstream os(filename, ios::in|ios::app);
+                    bytes_sent = send_file_tcp(os, s_new);
+                    if (bytes_sent < 0) {
+                        close(s_new);
+                        close_fp(board_info);
+                        print_error_and_exit("error sending -1", s_udp, s_tcp);
+                    }
+                }
             } else if (operation == "DST") {
                 bytes_received = recv_string_udp(board_name, s_udp, sin);
                 if (bytes_received < 0) {
@@ -547,6 +701,12 @@
                         unordered_map<string, bi>::iterator it;
                         for (it=board_info.begin(); it!=board_info.end(); it++) {
                             remove(it->first.c_str());
+                        }
+                        unordered_map<string, vector<string> >::iterator its;
+                        for (its=file_info.begin(); its!=file_info.end(); its++) {
+                            for (auto const it: its->second) {
+                                remove(it.c_str());
+                            }
                         }
                         close(s_new);
                         close(s_udp);

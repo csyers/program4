@@ -122,3 +122,68 @@ int recv_file_tcp(string &resp, int s_tcp) {
     resp = temp;
     return bytes_recv;
 }
+
+int send_file_tcp1(fstream os, int s_new) {
+    char buf[MAX_LENGTH];
+    int bytes_sent = 0;
+    int nsent;
+    streampos pos = os.tellg();
+    os.seekg(0, os.beg);
+
+    while (!os.eof()) {
+        bzero(buf, sizeof(buf));
+        os.read(buf, MAX_LENGTH);
+        if(!os.eof() && os.fail()) {
+            cout << "fail to read" << endl;
+            return -1;
+        }
+        if ((nsent=send(s_new, &buf, strlen(buf), 0)) < 0) {
+            return -1;
+        } else {
+            cout << "adding: " << nsent << endl;
+            bytes_sent += nsent;
+        }
+    }
+    os.clear();
+    os.seekg(pos);
+    return bytes_sent;
+}
+
+int send_file_tcp(string filename, int s_new) {
+    char buf[MAX_LENGTH];
+    int bytes_sent = 0;
+    int nsent;
+    FILE *fp;
+
+    if (!(fp = fopen(filename.c_str(), "r"))) {
+        return -1;
+    }
+
+    while(1) {
+    bzero((char *)buf, sizeof(buf));
+    // read some bytes from the file
+    int nred = fread(buf, 1, MAX_LENGTH, fp);
+    buf[nred] = '\0';
+    cout << buf << endl;
+
+    // if some bytes were read, send them to the client
+    if (nred > 0) {
+        if((nsent=send(s_new, &buf, nred, 0))==-1)
+        {
+            return -1;
+        }
+        cout << nsent << endl;
+        bytes_sent += nsent;
+    }
+    // if fewer than MAX_LINE bytes were read, there could be an error
+    if (nred < MAX_LENGTH) {
+        // if there was an error, exit
+        // else break out of the while look
+        if(ferror(fp)) {
+            return -1;
+        }
+        break;
+    }
+    }
+    return bytes_sent;
+}

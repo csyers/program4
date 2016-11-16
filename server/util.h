@@ -5,8 +5,10 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <vector>
 #include <cstdio>
 #include <fstream>
+#include <algorithm>
 #include <map>
 
 #define MAX_LENGTH 4096
@@ -154,18 +156,31 @@ int recv_int_tcp(int &msg, int s_new) {
     }
 }
 
-int send_file_tcp(fstream *os, int s_new) {
+int recv_file_tcp(string &resp, int s_tcp) {
+    int bytes_recv;
+    char buf[MAX_LENGTH];
+    bzero(buf, sizeof(buf));
+
+    if ((bytes_recv=recv(s_tcp, buf, sizeof(buf), 0))==-1) {
+        return -1;
+    } 
+
+    string temp(buf);
+    resp = temp;
+    return bytes_recv;
+}
+
+int send_file_tcp(fstream &os, int s_new) {
     char buf[MAX_LENGTH];
     int bytes_sent = 0;
     int nsent;
-    streampos pos = os->tellg();
-    os->seekg(0, os->beg);
+    streampos pos = os.tellg();
+    os.seekg(0, os.beg);
 
-    while (!os->eof()) {
+    while (!os.eof()) {
         bzero(buf, sizeof(buf));
-        os->read(buf, MAX_LENGTH);
-        cout << "sizeof buf: " << strlen(buf) << endl;
-        if(!os->eof() && os->fail()) {
+        os.read(buf, MAX_LENGTH);
+        if(!os.eof() && os.fail()) {
             cout << "fail to read" << endl;
             return -1;
         }
@@ -175,6 +190,7 @@ int send_file_tcp(fstream *os, int s_new) {
             bytes_sent += nsent;
         }
     }
-    os->seekg(pos);
+    os.clear();
+    os.seekg(pos);
     return bytes_sent;
 }

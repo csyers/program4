@@ -232,9 +232,7 @@ int main(int argc, char* argv[]){
                     //message = "";
                     filesize -= bytes_received;
                 }
-                cout << endl;
-            }
-
+            } 
         } else if(operation == "EDT"){
             // case: edit file operation
             bytes_sent = send_string_udp(operation, s_udp, sin);
@@ -268,8 +266,134 @@ int main(int argc, char* argv[]){
 
         } else if(operation == "APN"){
             // case: append file operation
+            string message, filename;
+            int flag;
+            // read baord operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation APN", s_udp, s_tcp);
+            }
+
+            // prompt for board name
+            cout << "Enter board name: ";
+            getline(cin, board_name);
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board name", s_udp, s_tcp);
+            }
+
+            cout << "Enter file to append: ";
+            getline(cin, filename);
+            bytes_sent = send_string_udp(filename, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending file name", s_udp, s_tcp);
+            }
+
+            // recv flag
+            bytes_received = recv_int_tcp(flag, s_tcp);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving flag", s_udp, s_tcp);
+            }
+
+            // recv msg
+            bytes_received = recv_string_tcp(message, s_tcp);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving message", s_udp, s_tcp);
+            }
+
+            if (flag == -1) {
+                // error on server side
+                cout << message << endl;
+                // send -1 filesize
+                bytes_sent = send_int_tcp(-1, s_tcp);
+                if (bytes_sent < 0) {
+                    print_error_and_exit("error sending filesize -1", s_udp, s_tcp);
+                } 
+            } else if (flag == 0){
+                cout << filename << endl;
+                if(access(filename.c_str(), F_OK) == -1) {
+                    cout << filename << " does not exist" << endl;
+                    bytes_sent = send_int_tcp(-1, s_tcp);
+                    if (bytes_sent < 0) {
+                        print_error_and_exit("error sending filesize -1", s_udp, s_tcp);
+                    } 
+                } else {
+                    // send filesize
+                    cout << message << endl;
+                    fstream os;
+                    os.open(filename.c_str(), ios::binary|ios::in|ios::app);
+                    os.seekp(0, os.end);
+                    filesize = os.tellp();
+                    os.seekp(0, os.beg);
+
+                    cout << filesize << endl;
+
+                    bytes_sent = send_int_tcp(filesize, s_tcp);
+                    if (bytes_sent < 0) {
+                        print_error_and_exit("error sending filesize", s_udp, s_tcp);
+                    } 
+
+                    // send file
+                    bytes_sent = send_file_tcp(filename, s_tcp);
+                    cout << bytes_sent << endl;
+                    if (bytes_sent < 0) {
+                        print_error_and_exit("error sending file", s_udp, s_tcp);
+                    }
+                }
+            } else {
+                cout << "unknown flag" << endl;
+                print_error_and_exit("error sending file", s_udp, s_tcp);
+            }
         } else if(operation == "DWN"){
             // case: download file operation
+            string message, filename;
+            // case read baord operation
+            bytes_sent = send_string_udp(operation, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending operation DWN", s_udp, s_tcp);
+            }
+
+            // prompt for board name
+            cout << "Enter board name: ";
+            getline(cin, board_name);
+            bytes_sent = send_string_udp(board_name, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending board name", s_udp, s_tcp);
+            }
+
+            cout << "Enter file to read: ";
+            getline(cin, filename);
+            bytes_sent = send_string_udp(filename, s_udp, sin);
+            if (bytes_sent < 0) {
+                print_error_and_exit("error sending file name", s_udp, s_tcp);
+            }
+
+            // recv filesize
+            bytes_received = recv_int_tcp(filesize, s_tcp);
+            if (bytes_received < 0) {
+                print_error_and_exit("error in receiving response", s_udp, s_tcp);
+            }
+
+            if (filesize == -1) {
+                cout << "File " << filename << " is not appended to board " << board_name << endl;
+            } else if (filesize == -2) {
+                cout << "Board " << board_name << " does not exist" << endl;
+            } else {
+                ofstream os;
+                filename = board_name + "-" + filename;
+                os.open(filename.c_str(), ios::app);
+                while (filesize > 0) {
+                    bytes_received = recv_file_tcp(message, s_tcp);
+                    if (bytes_received < 0) {
+                        print_error_and_exit("error in receiving response", s_udp, s_tcp);
+                    }
+                    cout << "bytes recv: " << bytes_received << endl;
+                    os << message;
+                    filesize -= bytes_received;
+                }
+                os.close();
+                cout << "file " << filename << " successfully downloaded" << endl;
+            }
         } else if(operation == "DST"){
             // case: destroy board operation
             bytes_sent = send_string_udp(operation, s_udp, sin);
@@ -294,7 +418,7 @@ int main(int argc, char* argv[]){
             if (bytes_sent < 0) {
                 print_error_and_exit("error sending operation XIT", s_udp, s_tcp);
             } else {
-                cout << "Goodbye" << endl;
+                cout << "Goodbye " << endl;
                 break;
             }
         } else if(operation == "SHT"){
